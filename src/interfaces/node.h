@@ -9,6 +9,7 @@
 #include <amount.h>     // For CAmount
 #include <net.h>        // For CConnman::NumConnections
 #include <netaddress.h> // For Network
+#include <support/allocators/secure.h> // For SecureString
 
 #include <functional>
 #include <memory>
@@ -18,6 +19,7 @@
 #include <tuple>
 #include <vector>
 
+class BanMan;
 class CCoinControl;
 class CFeeRate;
 class CNodeStats;
@@ -26,6 +28,7 @@ class RPCTimerInterface;
 class UniValue;
 class proxyType;
 struct CNodeStateStats;
+enum class WalletCreationStatus;
 
 namespace interfaces {
 class Handler;
@@ -37,8 +40,14 @@ class Node
 public:
     virtual ~Node() {}
 
+    //! Send init error.
+    virtual void initError(const std::string& message) = 0;
+
     //! Set command line arguments.
     virtual bool parseParameters(int argc, const char* const argv[], std::string& error) = 0;
+
+    //! Set a command line argument
+    virtual void forceSetArg(const std::string& arg, const std::string& value) = 0;
 
     //! Set a command line argument if it doesn't already have a value
     virtual bool softSetArg(const std::string& arg, const std::string& value) = 0;
@@ -51,6 +60,12 @@ public:
 
     //! Choose network parameters.
     virtual void selectParams(const std::string& network) = 0;
+
+    //! Get the (assumed) blockchain size.
+    virtual uint64_t getAssumedBlockchainSize() = 0;
+
+    //! Get the (assumed) chain state size.
+    virtual uint64_t getAssumedChainStateSize() = 0;
 
     //! Get network name.
     virtual std::string getNetwork() = 0;
@@ -107,7 +122,10 @@ public:
     //! Unban node.
     virtual bool unban(const CSubNet& ip) = 0;
 
-    //! Disconnect node.
+    //! Disconnect node by address.
+    virtual bool disconnect(const CNetAddr& net_addr) = 0;
+
+    //! Disconnect node by id.
     virtual bool disconnect(NodeId id) = 0;
 
     //! Get total bytes recv.
@@ -149,9 +167,6 @@ public:
     //! Get network active.
     virtual bool getNetworkActive() = 0;
 
-    //! Get max tx fee.
-    virtual CAmount getMaxTxFee() = 0;
-
     //! Estimate smart fee.
     virtual CFeeRate estimateSmartFee(int num_blocks, bool conservative, int* returned_target = nullptr) = 0;
 
@@ -181,6 +196,14 @@ public:
 
     //! Return interfaces for accessing wallets (if any).
     virtual std::vector<std::unique_ptr<Wallet>> getWallets() = 0;
+
+    //! Attempts to load a wallet from file or directory.
+    //! The loaded wallet is also notified to handlers previously registered
+    //! with handleLoadWallet.
+    virtual std::unique_ptr<Wallet> loadWallet(const std::string& name, std::string& error, std::vector<std::string>& warnings) = 0;
+
+    //! Create a wallet from file
+    virtual WalletCreationStatus createWallet(const SecureString& passphrase, uint64_t wallet_creation_flags, const std::string& name, std::string& error, std::vector<std::string>& warnings, std::unique_ptr<Wallet>& result) = 0;
 
     //! Register handler for init messages.
     using InitMessageFn = std::function<void(const std::string& message)>;
