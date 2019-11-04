@@ -76,7 +76,7 @@ bool AddTagNode(PoolsConf::PoolNode* node, const char* tag, int tag_size, const 
     auto newnode = std::unique_ptr<PoolsConf::PoolNode>(new PoolsConf::PoolNode);
     if (tag_size == 1)
         newnode->name = name;
-    auto pair = node->nodes.try_emplace(*tag, std::move(newnode));
+    auto pair = node->nodes.emplace(*tag, std::move(newnode));
     auto it = pair.first;
     if (tag_size == 1) {
         if (pair.second)
