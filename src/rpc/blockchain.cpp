@@ -34,6 +34,7 @@
 #include <validationinterface.h>
 #include <warnings.h>
 #include <key_io.h>
+#include <util/pools.h>
 
 #include <assert.h>
 #include <stdint.h>
@@ -2248,15 +2249,12 @@ static UniValue getblockfilter(const JSONRPCRequest& request)
 }
 
 static std::string GetBlockBookkeeper(int height){
+    LOCK(cs_main);
     if (height < 0 || height > ::ChainActive().Height())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
 
     CBlockIndex* pblockindex = ::ChainActive()[height];
-    CBlock block;
-    {
-        LOCK(cs_main);
-        block = GetBlockChecked(pblockindex);
-    }
+    CBlock block = GetBlockChecked(pblockindex);
     assert(block.vtx.size() > 0);
     auto& coinbasetx =  block.vtx[0];
     assert(coinbasetx->IsCoinBase());
@@ -2288,15 +2286,70 @@ static UniValue getblockbookkeeper(const JSONRPCRequest& request)
 
     UniValue ret(UniValue::VARR);
     int height = request.params[0].get_int();
-    int length = 1;
-    if (!request.params[1].isNull())
-        length = request.params[1].get_int();
-    int heightend = height + length;
+    int length = request.params[1].isNull() ? 0 : request.params[1].get_int();
+    int heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;    
+
     for(;height < heightend; ++height){
         std::string addr = GetBlockBookkeeper(height);
         if (addr.empty())
             throw JSONRPCError(RPC_INTERNAL_ERROR,"This error is unexpected");
         ret.push_back(addr);
+    }
+    return ret;
+}
+
+static std::string GetBlockBookkeeperPool(int height){
+    LOCK(cs_main);
+    if (height < 0 || height > ::ChainActive().Height())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
+
+    CBlockIndex* pblockindex = ::ChainActive()[height];
+    CBlock block = GetBlockChecked(pblockindex);
+    assert(block.vtx.size() > 0);
+    auto& coinbasetx =  block.vtx[0];
+    assert(coinbasetx->IsCoinBase());
+    auto& script = coinbasetx->vin[0].scriptSig;
+    std::string coinbase((char *)script.data(),script.size());
+    std::string name;
+    if(gPools().FindPoolByCoinbase(coinbase,name)){
+        return name;
+    }
+    CTxDestination address;
+    if(ExtractDestination(coinbasetx->vout[0].scriptPubKey,address))
+        if(gPools().FindPoolByAddr(EncodeDestination(address),name))
+            return name;
+    return "";
+}
+
+static UniValue getblockbookkeeperpool(const JSONRPCRequest& request)
+{
+    RPCHelpMan{"getblockbookkeeper",
+                "\nReturns bookkeeper address of block.\n",
+                {
+                    {"height", RPCArg::Type::NUM, RPCArg::Optional::NO, "The height index"},
+                    {"length", RPCArg::Type::NUM, "0", "Length begin of height"},
+                },
+                RPCResult{
+            "[               (json array of string)\n"
+            "  \"address\"    (string) The bookkeeper address\n"
+            "  ...\n"
+            "]\n"           
+                },
+                RPCExamples{
+                    HelpExampleCli("getblockbookkeeper", "100, 1000")
+            + HelpExampleRpc("getblockbookkeeper", "100, 1000")
+                },
+            }.Check(request);
+    
+    UniValue ret(UniValue::VARR);
+    int height = request.params[0].get_int();
+    int length = request.params[1].isNull() ? 0 : request.params[1].get_int();
+    int heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;     
+    for(;height < heightend; ++height){
+        std::string name = GetBlockBookkeeperPool(height);
+        // if (name.empty())
+        //     throw JSONRPCError(RPC_INTERNAL_ERROR,"This error is unexpected");
+        ret.push_back(name);
     }
     return ret;
 }
@@ -2330,6 +2383,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "scantxoutset",           &scantxoutset,           {"action", "scanobjects"} },
     { "blockchain",         "getblockfilter",         &getblockfilter,         {"blockhash", "filtertype"} },
     { "blockchain",         "getblockbookkeeper",     &getblockbookkeeper,     {"height", "length"} },
+    { "blockchain",         "getblockbookkeeperpool", &getblockbookkeeperpool, {"height", "length"} },
 
     /* Not shown in help */
     { "hidden",             "invalidateblock",        &invalidateblock,        {"blockhash"} },
