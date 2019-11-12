@@ -28,9 +28,10 @@ def getnewaddress():
     conn.request("POST","",body,{"Content-Type":"application/json",'Authorization' : 'Basic %s' %  userAndPass})
     resp = conn.getresponse()
     if resp.status != 200:
+        print("{} | getnewaddress error".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
         return None
     data = resp.read().decode()
-    print("getnewaddress result:  %s"%data)
+    print("{} | getnewaddress result: {}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
     data = json.loads(data)
     conn.close()
     return data["result"]
@@ -41,9 +42,10 @@ def generatetoaddress(nblocks,address,maxtries,coinbase):
     conn.request("POST","",body,{"Content-Type":"application/json",'Authorization' : 'Basic %s' %  userAndPass})
     resp = conn.getresponse()
     if resp.status != 200:
+        print("{} | generatetoaddress error".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
         return None
     data = resp.read().decode()
-    print("generatetoaddress result:  %s"%data)
+    print("{} | generatetoaddress result: {}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
     data = json.loads(data)
     conn.close()
     return data
@@ -57,7 +59,7 @@ def main():
         count = 0xFFFFFFFF
     t = int(args.time)
     for _ in range(count):
-        generatetoaddress(1,addr,10000000,pools[random.randint(0,len(pools)-1)])
+        generatetoaddress(1,addr,0x7FFFFFFF,pools[random.randint(0,len(pools)-1)])
         time.sleep(t)
 
 
