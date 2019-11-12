@@ -3,8 +3,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <univalue.h>
 #include <util/pools.h>
+
+#include <univalue.h>
 #include <util/system.h>
 
 const char* const BITCOIN_POOLS_FILENAME = "pools.json";

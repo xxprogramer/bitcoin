@@ -171,8 +171,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "stop", 0, "wait" },
     { "getblockbookkeeper", 0, "height" },
     { "getblockbookkeeper", 1, "length" },
-    { "getblockbookkeeperpool", 0, "height" },
-    { "getblockbookkeeperpool", 1, "length" },
+    { "listblockbookkeeperpool", 0, "height" },
+    { "listblockbookkeeperpool", 1, "length" },
 };
 // clang-format on
 

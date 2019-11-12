@@ -2321,9 +2321,9 @@ static std::string GetBlockBookkeeperPool(int height){
     return "";
 }
 
-static UniValue getblockbookkeeperpool(const JSONRPCRequest& request)
+static UniValue listblockbookkeeperpool(const JSONRPCRequest& request)
 {
-    RPCHelpMan{"getblockbookkeeper",
+    RPCHelpMan{"listblockbookkeeperpool",
                 "\nReturns bookkeeper address of block.\n",
                 {
                     {"height", RPCArg::Type::NUM, RPCArg::Optional::NO, "The height index"},
@@ -2331,13 +2331,17 @@ static UniValue getblockbookkeeperpool(const JSONRPCRequest& request)
                 },
                 RPCResult{
             "[               (json array of string)\n"
-            "  \"address\"    (string) The bookkeeper address\n"
+            "   {"
+            "       \"hash\"    (string) The block hash\n"
+            "       \"height\"    (string) The block height\n"
+            "       \"pool\"    (string) The bookkeeper address\n"
+            "   }"        
             "  ...\n"
             "]\n"           
                 },
                 RPCExamples{
-                    HelpExampleCli("getblockbookkeeper", "100, 1000")
-            + HelpExampleRpc("getblockbookkeeper", "100, 1000")
+                    HelpExampleCli("listblockbookkeeperpool", "100, 1000")
+            + HelpExampleRpc("listblockbookkeeperpool", "100, 1000")
                 },
             }.Check(request);
     
@@ -2347,9 +2351,16 @@ static UniValue getblockbookkeeperpool(const JSONRPCRequest& request)
     int heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;     
     for(;height < heightend; ++height){
         std::string name = GetBlockBookkeeperPool(height);
-        // if (name.empty())
-        //     throw JSONRPCError(RPC_INTERNAL_ERROR,"This error is unexpected");
-        ret.push_back(name);
+
+        UniValue item(UniValue::VOBJ);
+        if (height < 0 || height > ::ChainActive().Height())
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
+
+        CBlockIndex* pblockindex = ::ChainActive()[height];
+        item.pushKV("hash", pblockindex->GetBlockHash().GetHex());
+        item.pushKV("height", height);
+        item.pushKV("pool", name);
+        ret.push_back(item);
     }
     return ret;
 }
@@ -2383,7 +2394,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "scantxoutset",           &scantxoutset,           {"action", "scanobjects"} },
     { "blockchain",         "getblockfilter",         &getblockfilter,         {"blockhash", "filtertype"} },
     { "blockchain",         "getblockbookkeeper",     &getblockbookkeeper,     {"height", "length"} },
-    { "blockchain",         "getblockbookkeeperpool", &getblockbookkeeperpool, {"height", "length"} },
+    { "blockchain",         "listblockbookkeeperpool", &listblockbookkeeperpool, {"height", "length"} },
 
     /* Not shown in help */
     { "hidden",             "invalidateblock",        &invalidateblock,        {"blockhash"} },

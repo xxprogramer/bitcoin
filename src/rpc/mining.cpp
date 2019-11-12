@@ -99,7 +99,7 @@ static UniValue getnetworkhashps(const JSONRPCRequest& request)
     return GetNetworkHashPS(!request.params[0].isNull() ? request.params[0].get_int() : 120, !request.params[1].isNull() ? request.params[1].get_int() : -1);
 }
 
-static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, uint64_t nMaxTries)
+static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, uint64_t nMaxTries, const std::string& coinbase)
 {
     int nHeightEnd = 0;
     int nHeight = 0;
@@ -119,7 +119,7 @@ static UniValue generateBlocks(const CScript& coinbase_script, int nGenerate, ui
         CBlock *pblock = &pblocktemplate->block;
         {
             LOCK(cs_main);
-            IncrementExtraNonce(pblock, ::ChainActive().Tip(), nExtraNonce);
+            IncrementExtraNonce(pblock, ::ChainActive().Tip(), nExtraNonce, coinbase);
         }
         while (nMaxTries > 0 && pblock->nNonce < std::numeric_limits<uint32_t>::max() && !CheckProofOfWork(pblock->GetHash(), pblock->nBits, Params().GetConsensus()) && !ShutdownRequested()) {
             ++pblock->nNonce;
@@ -148,6 +148,7 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
                     {"nblocks", RPCArg::Type::NUM, RPCArg::Optional::NO, "How many blocks are generated immediately."},
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The address to send the newly generated bitcoin to."},
                     {"maxtries", RPCArg::Type::NUM, /* default */ "1000000", "How many iterations to try."},
+                    {"coinbase", RPCArg::Type::STR, /* default */ "", "Appand to coinbase."},
                 },
                 RPCResult{
             "[ blockhashes ]     (array) hashes of blocks generated\n"
@@ -165,6 +166,10 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
     if (!request.params[2].isNull()) {
         nMaxTries = request.params[2].get_int();
     }
+    std::string coinbase;
+    if (!request.params[3].isNull()) {
+        coinbase = request.params[3].get_str();
+    }
 
     CTxDestination destination = DecodeDestination(request.params[1].get_str());
     if (!IsValidDestination(destination)) {
@@ -173,7 +178,7 @@ static UniValue generatetoaddress(const JSONRPCRequest& request)
 
     CScript coinbase_script = GetScriptForDestination(destination);
 
-    return generateBlocks(coinbase_script, nGenerate, nMaxTries);
+    return generateBlocks(coinbase_script, nGenerate, nMaxTries, coinbase);
 }
 
 static UniValue getmininginfo(const JSONRPCRequest& request)

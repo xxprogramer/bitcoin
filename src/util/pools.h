@@ -9,7 +9,7 @@
 #ifndef BITCOIN_UTIL_POOLS_H
 #define BITCOIN_UTIL_POOLS_H
 
-#include <boost/container/flat_map.hpp>
+#include <map>
 #include <memory>
 #include <sync.h>
 
@@ -19,7 +19,7 @@ class PoolsConf
 {
  public:
     struct PoolNode {
-        using PoolMap = boost::container::flat_map<char, std::unique_ptr<PoolNode>>;
+        using PoolMap = std::map<char, std::unique_ptr<PoolNode>>;
 
         PoolMap nodes;
         std::string name;
@@ -41,7 +41,7 @@ private:
 private:
     mutable CCriticalSection cs_pools;
     PoolNode m_tag_root GUARDED_BY(cs_pools);
-    boost::container::flat_map<std::string,std::string> m_addr_name_map GUARDED_BY(cs_pools);
+    std::map<std::string,std::string> m_addr_name_map GUARDED_BY(cs_pools);
 };
 
 PoolsConf& gPools();
