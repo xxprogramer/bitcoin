@@ -2248,7 +2248,7 @@ static UniValue getblockfilter(const JSONRPCRequest& request)
     return ret;
 }
 
-static std::string GetBlockBookkeeper(int height){
+static std::string GetBlockMinerAddress(int height){
     LOCK(cs_main);
     if (height < 0 || height > ::ChainActive().Height())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
@@ -2264,41 +2264,7 @@ static std::string GetBlockBookkeeper(int height){
     return "";
 }
 
-static UniValue getblockbookkeeper(const JSONRPCRequest& request)
-{
-    RPCHelpMan{"getblockbookkeeper",
-                "\nReturns bookkeeper address of block.\n",
-                {
-                    {"height", RPCArg::Type::NUM, RPCArg::Optional::NO, "The height index"},
-                    {"length", RPCArg::Type::NUM, "0", "Length begin of height"},
-                },
-                RPCResult{
-            "[               (json array of string)\n"
-            "  \"address\"    (string) The bookkeeper address\n"
-            "  ...\n"
-            "]\n"           
-                },
-                RPCExamples{
-                    HelpExampleCli("getblockbookkeeper", "100, 1000")
-            + HelpExampleRpc("getblockbookkeeper", "100, 1000")
-                },
-            }.Check(request);
-
-    UniValue ret(UniValue::VARR);
-    int height = request.params[0].get_int();
-    int length = request.params[1].isNull() ? 0 : request.params[1].get_int();
-    int heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;    
-
-    for(;height < heightend; ++height){
-        std::string addr = GetBlockBookkeeper(height);
-        if (addr.empty())
-            throw JSONRPCError(RPC_INTERNAL_ERROR,"This error is unexpected");
-        ret.push_back(addr);
-    }
-    return ret;
-}
-
-static std::string GetBlockBookkeeperPool(int height){
+static std::string GetBlockMinerName(int height){
     LOCK(cs_main);
     if (height < 0 || height > ::ChainActive().Height())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
@@ -2321,10 +2287,10 @@ static std::string GetBlockBookkeeperPool(int height){
     return "";
 }
 
-static UniValue listblockbookkeeperpool(const JSONRPCRequest& request)
+static UniValue listblockminerinfo(const JSONRPCRequest& request)
 {
-    RPCHelpMan{"listblockbookkeeperpool",
-                "\nReturns bookkeeper address of block.\n",
+    RPCHelpMan{"listblockminerinfo",
+                "\nReturns miner address of block.\n",
                 {
                     {"height", RPCArg::Type::NUM, RPCArg::Optional::NO, "The height index"},
                     {"length", RPCArg::Type::NUM, "0", "Length begin of height"},
@@ -2334,14 +2300,14 @@ static UniValue listblockbookkeeperpool(const JSONRPCRequest& request)
             "   {"
             "       \"hash\"    (string) The block hash\n"
             "       \"height\"    (string) The block height\n"
-            "       \"pool\"    (string) The bookkeeper address\n"
+            "       \"pool\"    (string) The miner address\n"
             "   }"        
             "  ...\n"
             "]\n"           
                 },
                 RPCExamples{
-                    HelpExampleCli("listblockbookkeeperpool", "100, 1000")
-            + HelpExampleRpc("listblockbookkeeperpool", "100, 1000")
+                    HelpExampleCli("listblockminerinfo", "100, 1000")
+            + HelpExampleRpc("listblockminerinfo", "100, 1000")
                 },
             }.Check(request);
     
@@ -2350,7 +2316,7 @@ static UniValue listblockbookkeeperpool(const JSONRPCRequest& request)
     int length = request.params[1].isNull() ? 0 : request.params[1].get_int();
     int heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;     
     for(;height < heightend; ++height){
-        std::string name = GetBlockBookkeeperPool(height);
+        std::string name = GetBlockMinerName(height);
 
         UniValue item(UniValue::VOBJ);
         if (height < 0 || height > ::ChainActive().Height())
@@ -2393,8 +2359,8 @@ static const CRPCCommand commands[] =
     { "blockchain",         "preciousblock",          &preciousblock,          {"blockhash"} },
     { "blockchain",         "scantxoutset",           &scantxoutset,           {"action", "scanobjects"} },
     { "blockchain",         "getblockfilter",         &getblockfilter,         {"blockhash", "filtertype"} },
-    { "blockchain",         "getblockbookkeeper",     &getblockbookkeeper,     {"height", "length"} },
-    { "blockchain",         "listblockbookkeeperpool", &listblockbookkeeperpool, {"height", "length"} },
+
+    { "blockchain",         "listblockminerinfo",     &listblockminerinfo, {"height", "length"} },
 
     /* Not shown in help */
     { "hidden",             "invalidateblock",        &invalidateblock,        {"blockhash"} },
