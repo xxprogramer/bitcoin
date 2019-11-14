@@ -39,6 +39,7 @@ def getnewaddress():
 def generatetoaddress(nblocks,address,maxtries,coinbase):
     conn = http.client.HTTPConnection(args.host)
     body = r'{{"jsonrp": "1.0","method": "generatetoaddress","params": [{},"{}",{},"{}"],"id": {}}}'.format(nblocks,address,maxtries,coinbase,int(time.time()))
+    print(coinbase)
     conn.request("POST","",body,{"Content-Type":"application/json",'Authorization' : 'Basic %s' %  userAndPass})
     resp = conn.getresponse()
     if resp.status != 200:
@@ -53,7 +54,7 @@ def generatetoaddress(nblocks,address,maxtries,coinbase):
 
 def main():
     addr = getnewaddress()
-    pools = ["2/1THash&58COIN/","/Huobi/3","234/HotPool/34","rew/E2M & BTC.TOP/e","32fdxbtc.exx.com&bw.com45fgg","000000000"]
+    pools = ["2/1THash&58COIN/","/Huobi/3","234/HotPool/34","rew/E2M & BTC.TOP/e","32fdxbtc.exx.com&bw.com45fgg"]
     count = int(args.count)
     if count == 0:
         count = 0xFFFFFFFF
