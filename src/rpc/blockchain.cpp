@@ -2299,8 +2299,9 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
             "[               (json array of string)\n"
             "   {"
             "       \"hash\"    (string) The block hash\n"
-            "       \"height\"    (string) The block height\n"
+            "       \"height\"    (numeric) The block height\n"
             "       \"pool\"    (string) The miner address\n"
+            "       \"time\":  (numeric) The timestamp for the block\n"
             "   }"        
             "  ...\n"
             "]\n"           
@@ -2326,6 +2327,7 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
         item.pushKV("hash", pblockindex->GetBlockHash().GetHex());
         item.pushKV("height", height);
         item.pushKV("pool", name);
+        item.pushKV("time", pblockindex->GetBlockTime());
         ret.push_back(item);
     }
     return ret;
