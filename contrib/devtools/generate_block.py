@@ -51,6 +51,13 @@ def generatetoaddress(nblocks,address,maxtries,coinbase):
     conn.close()
     return data
 
+def gettime(block):
+    t = 0
+    if int(block / 100) & 1 == 0:
+        t = random.randint(1*60,2*60)
+    else:
+        t = random.randint(11*60,15*60)
+    return t
 
 def main():
     addr = getnewaddress()
@@ -58,10 +65,9 @@ def main():
     count = int(args.count)
     if count == 0:
         count = 0xFFFFFFFF
-    t = int(args.time)
-    for _ in range(count):
+    for i in range(count):
         generatetoaddress(1,addr,0x7FFFFFFF,pools[random.randint(0,len(pools)-1)])
-        time.sleep(t)
+        time.sleep(gettime(i))
 
 
 if __name__ == '__main__':
