@@ -36,10 +36,23 @@ def getnewaddress():
     conn.close()
     return data["result"]
 
+def dumpprivkey(addr):
+    conn = http.client.HTTPConnection(args.host)
+    body = r'{{"jsonrp": "1.0","method": "dumpprivkey","params": ["{}"],"id": {}}}'.format(addr,int(time.time()))
+    conn.request("POST","",body,{"Content-Type":"application/json",'Authorization' : 'Basic %s' %  userAndPass})
+    resp = conn.getresponse()
+    if resp.status != 200:
+        print("{} | dumpprivkey error".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+        return None
+    data = resp.read().decode()
+    print("{} | dumpprivkey result: {}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
+    data = json.loads(data)
+    conn.close()
+    return data["result"]
+
 def generatetoaddress(nblocks,address,maxtries,coinbase):
     conn = http.client.HTTPConnection(args.host)
     body = r'{{"jsonrp": "1.0","method": "generatetoaddress","params": [{},"{}",{},"{}"],"id": {}}}'.format(nblocks,address,maxtries,coinbase,int(time.time()))
-    print(coinbase)
     conn.request("POST","",body,{"Content-Type":"application/json",'Authorization' : 'Basic %s' %  userAndPass})
     resp = conn.getresponse()
     if resp.status != 200:
@@ -59,14 +72,27 @@ def gettime(block):
         t = random.randint(11*60,15*60)
     return t
 
+miner_count = 5
+addr_count = 5
+
 def main():
-    addr = getnewaddress()
+    addrpool = []
+    for i in range(25):
+        addr = getnewaddress()
+        key = dumpprivkey(addr)
+        addrpool.append([addr,key])
+
+    for v in addrpool:
+        print("addr: {}  key: {}".format(v[0],v[1]))
+    
     pools = ["2/1THash&58COIN/","/Huobi/3","234/HotPool/34","rew/E2M & BTC.TOP/e","32fdxbtc.exx.com&bw.com45fgg"]
     count = int(args.count)
     if count == 0:
         count = 0xFFFFFFFF
     for i in range(count):
-        generatetoaddress(1,addr,0x7FFFFFFF,pools[random.randint(0,len(pools)-1)])
+        r = random.randint(0,len(pools)-1)
+        addr = addrpool[r*5+random.randint(0,addr_count-1)][0]
+        generatetoaddress(1,addr,0x7FFFFFFF,pools[r])
         time.sleep(gettime(i))
 
 
