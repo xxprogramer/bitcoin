@@ -22,6 +22,8 @@ parser.add_argument('-count', default=0,
                     help='gen count')
 parser.add_argument('-time', default=0,
                     help='gen time')
+parser.add_argument('-tx_time', default=240,
+                    help='gen tx time')
 args = parser.parse_args()
 userAndPass = b64encode("{}:{}".format(
     args.rpcuser, args.rpcpassword).encode('utf-8')).decode("ascii")
@@ -125,7 +127,7 @@ def createrawtransaction(inputs, outputs):
 
     body = r'{{"jsonrp": "1.0","method": "createrawtransaction","params": [{},{}],"id": {}}}'.format(
         json.dumps(inputs), json.dumps(outputs), int(time.time()))
-    body.replace("1.234e-05","0.00001234")
+    #body.replace("1.234e-05","0.00001234")
     conn.request("POST", "", body, {
                  "Content-Type": "application/json", 'Authorization': 'Basic %s' % userAndPass})
     resp = conn.getresponse()
@@ -194,7 +196,7 @@ def makeasimovtx(pools, asimov_addr):
         sum = sum + float(v["amount"])
     outputs = {}
     outputs[asimov_addr] =  0.00001234
-    outputs[addrs[0]] = (sum -  0.01)
+    outputs[addrs[0]] = int((sum -  0.01) * 10000) / 10000
     hex = createrawtransaction(inputs, outputs)
     hex = signrawtransactionwithkey(hex, keys)
     return sendrawtransaction(hex)
@@ -267,12 +269,13 @@ def gettime(block):
 
 
 def asimovetx(addrpool):
+    t = int(args.tx_time)
     while True:
         r = random.randint(0, miner_count * addr_count-1)
         rl = random.randint(1, 3)
         addr = getnewaddress()
         makeasimovtx(addrpool[r:min(r+rl,miner_count * addr_count)], addr)
-        time.sleep(20)
+        time.sleep(t)
 
 
 def main():
