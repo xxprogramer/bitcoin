@@ -35,6 +35,7 @@
 #include <warnings.h>
 #include <key_io.h>
 #include <util/pools.h>
+#include <node/coin.h>
 
 #include <assert.h>
 #include <stdint.h>
@@ -46,6 +47,8 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+
+#define ASIMOV_MAGIC_VALUE 1234
 
 struct CUpdatedBlock
 {
@@ -2261,7 +2264,7 @@ static std::string GetBlockMinerAddress(int height){
     CTxDestination address;
     if(ExtractDestination(coinbasetx->vout[0].scriptPubKey,address))
         return EncodeDestination(address);
-    return "";
+    throw JSONRPCError(RPC_INTERNAL_ERROR, "Address decode error");
 }
 
 static std::string GetBlockMinerName(int height){
@@ -2287,6 +2290,55 @@ static std::string GetBlockMinerName(int height){
     return "";
 }
 
+static UniValue GetAsimovValidator(int height)
+{
+    LOCK(cs_main);
+    if (height < 0 || height > ::ChainActive().Height())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
+
+    CBlockIndex* pblockindex = ::ChainActive()[height];
+    CBlock block = GetBlockChecked(pblockindex);
+    CBlockUndo blockUndo = GetUndoChecked(pblockindex);
+    if (blockUndo.vtxundo.size() + 1 != block.vtx.size())
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "undo or block size error");
+
+    CTxDestination address;
+    UniValue ret(UniValue::VARR);
+    for (int i = block.vtx.size() - 1; i > 0; i--) {
+        const CTransaction& tx = *(block.vtx[i]);
+        CTxUndo& txundo = blockUndo.vtxundo[i - 1];
+        UniValue jsontx(UniValue::VOBJ);
+        bool find_flag = false;
+        for (const CTxOut& out : tx.vout) {
+            if (out.nValue != ASIMOV_MAGIC_VALUE)
+                continue;
+            find_flag = true;
+            UniValue vin(UniValue::VARR);
+            std::unordered_set<std::string> filter_set;
+            for (Coin& coin : txundo.vprevout) {
+                if (ExtractDestination(coin.out.scriptPubKey, address)) {
+                    auto t = EncodeDestination(address);
+                    if (filter_set.insert(t).second)
+                        vin.push_back(t);
+                } else
+                    throw JSONRPCError(RPC_INTERNAL_ERROR, "Address decode error");
+            }
+            jsontx.pushKV("vin",vin);
+
+            if (ExtractDestination(out.scriptPubKey, address)) {
+                jsontx.pushKV("out_address",EncodeDestination(address));
+            } else
+                throw JSONRPCError(RPC_INTERNAL_ERROR, "Address decode error");
+            break;
+        }  
+        if(find_flag){
+            jsontx.pushKV("txid",tx.GetHash().GetHex());
+            ret.push_back(jsontx);
+        }     
+    }
+    return ret; 
+}
+
 static UniValue listblockminerinfo(const JSONRPCRequest& request)
 {
     RPCHelpMan{"listblockminerinfo",
@@ -2298,10 +2350,23 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
                 RPCResult{
             "[               (json array of string)\n"
             "   {"
-            "       \"hash\"    (string) The block hash\n"
-            "       \"height\"    (numeric) The block height\n"
-            "       \"pool\"    (string) The miner address\n"
-            "       \"time\":  (numeric) The timestamp for the block\n"
+            "       \"hash\": hex  (string) The block hash\n"
+            "       \"height\": n  (numeric) The block height\n"
+            "       \"address\": s   (string) The miner address\n"
+            "       \"pool\": s   (string) The miner name\n"
+            "       \"time\": n  (numeric) The timestamp for the block\n"
+            "       \"validator_txs\":  \n"
+            "           [\n"
+            "               {\n"           
+            "                   \"txid\": (string)\n"
+            "                   \"vin\":"
+            "                       ["
+            "                           \"address\" (string)\n"
+            "                           ..."
+            "                       ]\n"
+            "                   \"out_address\": (string) The asimov validator address\n\n"
+            "               }\n"
+            "           ]\n"
             "   }"        
             "  ...\n"
             "]\n"           
@@ -2316,9 +2381,12 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
     int height = request.params[0].get_int();
     int length = request.params[1].isNull() ? 0 : request.params[1].get_int();
     int heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;     
-    for(;height < heightend; ++height){
+    for (;height < heightend; ++height){
         std::string name = GetBlockMinerName(height);
-
+        std::string addr = GetBlockMinerAddress(height);
+        UniValue validator_txs = GetAsimovValidator(height);
+        if (addr.empty())
+            throw JSONRPCError(RPC_INTERNAL_ERROR,"This error is unexpected");
         UniValue item(UniValue::VOBJ);
         if (height < 0 || height > ::ChainActive().Height())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
@@ -2326,12 +2394,16 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
         CBlockIndex* pblockindex = ::ChainActive()[height];
         item.pushKV("hash", pblockindex->GetBlockHash().GetHex());
         item.pushKV("height", height);
+        item.pushKV("address",addr);
         item.pushKV("pool", name);
         item.pushKV("time", pblockindex->GetBlockTime());
+        item.pushKV("validator_txs", validator_txs);
         ret.push_back(item);
     }
     return ret;
 }
+
+
 
 // clang-format off
 static const CRPCCommand commands[] =
