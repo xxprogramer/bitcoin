@@ -226,3 +226,47 @@ bool IsValidDestinationString(const std::string& str)
 {
     return IsValidDestinationString(str, Params());
 }
+
+class DestinationHexEncoder : public boost::static_visitor<std::string>
+{
+private:
+    const CChainParams& m_params;
+
+public:
+    explicit DestinationHexEncoder(const CChainParams& params) : m_params(params) {}
+
+    std::string operator()(const PKHash& id) const
+    {
+        return id.GetHex();
+    }
+
+    std::string operator()(const ScriptHash& id) const
+    {
+        return id.GetHex();
+    }
+
+    std::string operator()(const WitnessV0KeyHash& id) const
+    {
+        //TODO
+        return {};
+    }
+
+    std::string operator()(const WitnessV0ScriptHash& id) const
+    {
+        //TODO
+        return {};
+    }
+
+    std::string operator()(const WitnessUnknown& id) const
+    {
+        //TODO
+        return {};
+    }
+
+    std::string operator()(const CNoDestination& no) const { return {}; }
+};
+
+std::string EncodeDestinationHex(const CTxDestination& dest)
+{
+    return boost::apply_visitor(DestinationHexEncoder(Params()), dest);
+}

@@ -277,7 +277,6 @@ def asimovetx(addrpool):
         makeasimovtx(addrpool[r:min(r+rl,miner_count * addr_count)], addr)
         time.sleep(t)
 
-
 def main():
 
     # for i in range(miner_count * addr_count):
@@ -301,7 +300,9 @@ def main():
     for i in range(count):
         r = random.randint(0, miner_count * addr_count-1)
         addr = addrpool[r][0]
-        generatetoaddress(1, addr, 0x7FFFFFFF, pools[int(r/addr_count)])
+        pool = pools[int(r/addr_count)]
+        threading.Thread(target=generatetoaddress, args=(1,addr,0x7FFFFFFF,pool,)).start()
+        #generatetoaddress(1, addr, 0x7FFFFFFF, pool)
         t = int(args.time)
         if int(args.time) == 0:
             t = gettime(i)
@@ -310,3 +311,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+#9135

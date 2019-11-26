@@ -2251,13 +2251,7 @@ static UniValue getblockfilter(const JSONRPCRequest& request)
     return ret;
 }
 
-static std::string GetBlockMinerAddress(int height){
-    LOCK(cs_main);
-    if (height < 0 || height > ::ChainActive().Height())
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
-
-    CBlockIndex* pblockindex = ::ChainActive()[height];
-    CBlock block = GetBlockChecked(pblockindex);
+static std::string GetBlockMinerAddress(const CBlock block,const CBlockIndex* pblockindex){
     assert(block.vtx.size() > 0);
     auto& coinbasetx =  block.vtx[0];
     assert(coinbasetx->IsCoinBase());
@@ -2267,13 +2261,7 @@ static std::string GetBlockMinerAddress(int height){
     throw JSONRPCError(RPC_INTERNAL_ERROR, "Address decode error");
 }
 
-static std::string GetBlockMinerName(int height){
-    LOCK(cs_main);
-    if (height < 0 || height > ::ChainActive().Height())
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
-
-    CBlockIndex* pblockindex = ::ChainActive()[height];
-    CBlock block = GetBlockChecked(pblockindex);
+static std::string GetBlockMinerName(const CBlock block,const CBlockIndex* pblockindex){
     assert(block.vtx.size() > 0);
     auto& coinbasetx =  block.vtx[0];
     assert(coinbasetx->IsCoinBase());
@@ -2290,28 +2278,24 @@ static std::string GetBlockMinerName(int height){
     return "";
 }
 
-static UniValue GetAsimovValidator(int height)
+static UniValue GetAsimovValidator(const CBlock block,const CBlockIndex* pblockindex)
 {
-    LOCK(cs_main);
-    if (height < 0 || height > ::ChainActive().Height())
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
-
-    CBlockIndex* pblockindex = ::ChainActive()[height];
-    CBlock block = GetBlockChecked(pblockindex);
-    CBlockUndo blockUndo = GetUndoChecked(pblockindex);
-    if (blockUndo.vtxundo.size() + 1 != block.vtx.size())
-        throw JSONRPCError(RPC_INTERNAL_ERROR, "undo or block size error");
+    CBlockUndo blockUndo;
 
     CTxDestination address;
     UniValue ret(UniValue::VARR);
     for (int i = block.vtx.size() - 1; i > 0; i--) {
         const CTransaction& tx = *(block.vtx[i]);
-        CTxUndo& txundo = blockUndo.vtxundo[i - 1];
         UniValue jsontx(UniValue::VOBJ);
         bool find_flag = false;
         for (const CTxOut& out : tx.vout) {
             if (out.nValue != ASIMOV_MAGIC_VALUE)
                 continue;
+            if (blockUndo.vtxundo.empty())
+                blockUndo = GetUndoChecked(pblockindex);
+            if (blockUndo.vtxundo.size() + 1 != block.vtx.size())
+                throw JSONRPCError(RPC_INTERNAL_ERROR, "undo or block size error");
+            CTxUndo& txundo = blockUndo.vtxundo[i - 1];
             find_flag = true;
             UniValue vin(UniValue::VARR);
             std::unordered_set<std::string> filter_set;
@@ -2326,7 +2310,8 @@ static UniValue GetAsimovValidator(int height)
             jsontx.pushKV("vin",vin);
 
             if (ExtractDestination(out.scriptPubKey, address)) {
-                jsontx.pushKV("out_address",EncodeDestination(address));
+                jsontx.pushKV("outAddress",EncodeDestinationHex(address));
+                jsontx.pushKV("addressType",address.which());
             } else
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Address decode error");
             break;
@@ -2355,7 +2340,7 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
             "       \"address\": s   (string) The miner address\n"
             "       \"pool\": s   (string) The miner name\n"
             "       \"time\": n  (numeric) The timestamp for the block\n"
-            "       \"validator_txs\":  \n"
+            "       \"validatorTxs\":  \n"
             "           [\n"
             "               {\n"           
             "                   \"txid\": (string)\n"
@@ -2364,7 +2349,8 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
             "                           \"address\" (string)\n"
             "                           ..."
             "                       ]\n"
-            "                   \"out_address\": (string) The asimov validator address\n\n"
+            "                   \"outAddress\": (string) The asimov validator address hex\n\n"
+            "                   \"addressType\": (numerivc) 1:pkhash 2:scripthash"
             "               }\n"
             "           ]\n"
             "   }"        
@@ -2380,11 +2366,27 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
     UniValue ret(UniValue::VARR);
     int height = request.params[0].get_int();
     int length = request.params[1].isNull() ? 0 : request.params[1].get_int();
-    int heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;     
+    int heightend;
+    {
+        LOCK(cs_main);
+        if (length > 0 && ::ChainActive().Height() + 1 < height + length){
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
+        }    
+        heightend = length > 0 ? height + length : ::ChainActive().Height() + 1;  
+    }
+
+    CBlockIndex* pblockindex = nullptr;
+    CBlock block;
     for (;height < heightend; ++height){
-        std::string name = GetBlockMinerName(height);
-        std::string addr = GetBlockMinerAddress(height);
-        UniValue validator_txs = GetAsimovValidator(height);
+        {
+            LOCK(cs_main);
+            pblockindex = ::ChainActive()[height];
+        }
+        block = GetBlockChecked(pblockindex);
+
+        std::string name = GetBlockMinerName(block,pblockindex);
+        std::string addr = GetBlockMinerAddress(block,pblockindex);
+        UniValue validator_txs = GetAsimovValidator(block,pblockindex);
         if (addr.empty())
             throw JSONRPCError(RPC_INTERNAL_ERROR,"This error is unexpected");
         UniValue item(UniValue::VOBJ);
@@ -2397,7 +2399,7 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
         item.pushKV("address",addr);
         item.pushKV("pool", name);
         item.pushKV("time", pblockindex->GetBlockTime());
-        item.pushKV("validator_txs", validator_txs);
+        item.pushKV("validatorTxs", validator_txs);
         ret.push_back(item);
     }
     return ret;
