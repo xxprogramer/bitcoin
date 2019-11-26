@@ -171,6 +171,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "stop", 0, "wait" },
     { "listblockminerinfo", 0, "height" },
     { "listblockminerinfo", 1, "length" },
+    { "dumpprivkey", 1, "type" },
 };
 // clang-format on
 

@@ -695,6 +695,7 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
                 "Then the importprivkey can be used with this output\n",
                 {
                     {"address", RPCArg::Type::STR, RPCArg::Optional::NO, "The bitcoin address for the private key"},
+                    {"type", RPCArg::Type::NUM, "0", "0: base58check ,1: hex"},
                 },
                 RPCResult{
             "\"key\"                (string) The private key\n"
@@ -724,6 +725,8 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
     if (!pwallet->GetKey(keyid, vchSecret)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + strAddress + " is not known");
     }
+    if (request.params[1].get_int())
+        return EncodeSecretHex(vchSecret);
     return EncodeSecret(vchSecret);
 }
 

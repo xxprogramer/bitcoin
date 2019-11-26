@@ -27,4 +27,5 @@ bool IsValidDestinationString(const std::string& str);
 bool IsValidDestinationString(const std::string& str, const CChainParams& params);
 
 std::string EncodeDestinationHex(const CTxDestination& dest);
+std::string EncodeSecretHex(const CKey& key);
 #endif // BITCOIN_KEY_IO_H

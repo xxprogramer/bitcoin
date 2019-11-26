@@ -270,3 +270,8 @@ std::string EncodeDestinationHex(const CTxDestination& dest)
 {
     return boost::apply_visitor(DestinationHexEncoder(Params()), dest);
 }
+
+std::string EncodeSecretHex(const CKey& key)
+{
+    return HexStr(key.begin(), key.end());
+}
