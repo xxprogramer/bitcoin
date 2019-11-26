@@ -24,6 +24,8 @@ parser.add_argument('-time', default=0,
                     help='gen time')
 parser.add_argument('-tx_time', default=240,
                     help='gen tx time')
+parser.add_argument('-send', default=0,
+                    help='send asimov tx')
 args = parser.parse_args()
 userAndPass = b64encode("{}:{}".format(
     args.rpcuser, args.rpcpassword).encode('utf-8')).decode("ascii")
@@ -39,7 +41,7 @@ def getnewaddress():
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | getnewaddress error,data: {}".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
         return None
     print("{} | getnewaddress result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
@@ -58,14 +60,15 @@ def dumpprivkey(addr):
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | dumpprivkey error,data: {}".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
         return None
-    
+
     print("{} | dumpprivkey result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
     data = json.loads(data)
     conn.close()
     return data["result"]
+
 
 def importprivkey(key):
     conn = http.client.HTTPConnection(args.host)
@@ -77,7 +80,7 @@ def importprivkey(key):
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | importprivkey error,data: {}".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
         return None
     print("{} | importprivkey result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
@@ -85,16 +88,18 @@ def importprivkey(key):
     conn.close()
     return data
 
+
 def generatetoaddress(nblocks, address, maxtries, coinbase):
     conn = http.client.HTTPConnection(args.host)
-    body = r'{{"jsonrp": "1.0","method": "generatetoaddress","params": [{},"{}",{},"{}"],"id": {}}}'.format(nblocks, address, maxtries, coinbase, int(time.time()))
+    body = r'{{"jsonrp": "1.0","method": "generatetoaddress","params": [{},"{}",{},"{}"],"id": {}}}'.format(
+        nblocks, address, maxtries, coinbase, int(time.time()))
     conn.request("POST", "", body, {
                  "Content-Type": "application/json", 'Authorization': 'Basic %s' % userAndPass})
     resp = conn.getresponse()
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | generatetoaddress error,,data".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
         return None
     print("{} | generatetoaddress result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
@@ -113,7 +118,7 @@ def listunspent(addrs):
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | listunspent error,data: {}".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
         return None
     print("{} | listunspent result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
@@ -127,14 +132,14 @@ def createrawtransaction(inputs, outputs):
 
     body = r'{{"jsonrp": "1.0","method": "createrawtransaction","params": [{},{}],"id": {}}}'.format(
         json.dumps(inputs), json.dumps(outputs), int(time.time()))
-    #body.replace("1.234e-05","0.00001234")
+    # body.replace("1.234e-05","0.00001234")
     conn.request("POST", "", body, {
                  "Content-Type": "application/json", 'Authorization': 'Basic %s' % userAndPass})
     resp = conn.getresponse()
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | createrawtransaction error,data: {},  send body: {}".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data,body))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data, body))
         return None
     print("{} | createrawtransaction result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
@@ -145,14 +150,15 @@ def createrawtransaction(inputs, outputs):
 
 def signrawtransactionwithkey(hex, keys):
     conn = http.client.HTTPConnection(args.host)
-    body = r'{{"jsonrp": "1.0","method": "signrawtransactionwithkey","params": ["{}",{}],"id": {}}}'.format(hex, json.dumps(keys), int(time.time()))
+    body = r'{{"jsonrp": "1.0","method": "signrawtransactionwithkey","params": ["{}",{}],"id": {}}}'.format(
+        hex, json.dumps(keys), int(time.time()))
     conn.request("POST", "", body, {
                  "Content-Type": "application/json", 'Authorization': 'Basic %s' % userAndPass})
     resp = conn.getresponse()
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | signrawtransactionwithkey error,data :{}".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
         return None
     print("{} | signrawtransactionwithkey result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
@@ -171,7 +177,7 @@ def sendrawtransaction(hex):
     data = resp.read().decode()
     if resp.status != 200:
         print("{} | sendrawtransaction error,resp: {} ,send body: {}".format(
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),data,body))
+            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data, body))
         return None
     print("{} | sendrawtransaction result: {}".format(
         time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), data))
@@ -195,12 +201,11 @@ def makeasimovtx(pools, asimov_addr):
     for v in inputs:
         sum = sum + float(v["amount"])
     outputs = {}
-    outputs[asimov_addr] =  0.00001234
-    outputs[addrs[0]] = int((sum -  0.01) * 10000) / 10000
+    outputs[asimov_addr] = 0.00001234
+    outputs[addrs[0]] = int((sum - 0.01) * 10000) / 10000
     hex = createrawtransaction(inputs, outputs)
     hex = signrawtransactionwithkey(hex, keys)
     return sendrawtransaction(hex)
-
 
 
 miner_count = 5
@@ -258,6 +263,17 @@ addrpool = [
         "cREBk8hgpRsdNzVAfoya3XU9b2k5Rw6iZYu13cjHX31Gf8v3GKux"],
 ]
 
+asimove_addr = [
+    ["mtGP4RbEndRKLJjJFQUTcAumEjTefo45sG", "cShhuRhRfnTVSdNyQNqySNdvG5ixEW8EM6fYXe5hUsoVciPGnmFn",
+        "0x98ca5264f6919fc12536a77c122dfaeb491ab01ed657c6db32e14a252a8125e3"],
+    ["n2kUTtWS3nDbZ73fuPndd4BQfJJAJ8vztt", "cPyYLL5VsmSzKpsG9SMyMTfqJQeYyh1szXvZZXoDaBhFES8yDp5A",
+     "0x476c9b84ae64d263465152e91acb5f3076112f927a9c8dc8852ea67a9990f729"],
+    ["mwpL7DmjbVUpwF3mkQSSUtcY68qCJBs82Q", "cN8KHMs8gGUVrgRiM4WiyMCis7sHb99i16fuoSU6EV9wVMq5Ch64",
+     "0x10437dafd473a7fc2c01fd205f3a3ab0b02558e85f24a01d129af26ca49822c0"],
+    ["msPtCzzuM1ixoRtArWsgwQnv1jtk4M4fUs", "cVeR6pc3HsssoZMzAZRRtAm7uTAuR35rQFhpD8cRHdMJfqpFKUTw",
+     "0xf09c331d8b4ee7c1df83d7d5fd7b9c27220157d14d5ba0c4c8c319e3850cd0a7"],
+]
+
 
 def gettime(block):
     t = 0
@@ -274,8 +290,15 @@ def asimovetx(addrpool):
         r = random.randint(0, miner_count * addr_count-1)
         rl = random.randint(1, 3)
         addr = getnewaddress()
-        makeasimovtx(addrpool[r:min(r+rl,miner_count * addr_count)], addr)
+        makeasimovtx(addrpool[r:min(r+rl, miner_count * addr_count)], addr)
         time.sleep(t)
+
+def sendasimov():
+    makeasimovtx([addrpool[0]], asimove_addr[0][0])
+    makeasimovtx([addrpool[5]], asimove_addr[1][0])
+    makeasimovtx([addrpool[10]], asimove_addr[2][0])
+    makeasimovtx([addrpool[11]], asimove_addr[3][0])
+
 
 def main():
 
@@ -290,25 +313,37 @@ def main():
     for pair in addrpool:
         importprivkey(pair[1])
 
-    threading.Thread(target=asimovetx, args=(addrpool,)).start()
+    if int(args.send) > 0:
+        sendasimov()
+        return
+
+    #threading.Thread(target=asimovetx, args=(addrpool,)).start()
 
     pools = ["2/1THash&58COIN/", "/Huobi/3", "234/HotPool/34",
              "rew/E2M & BTC.TOP/e", "32fdxbtc.exx.com&bw.com45fgg"]
     count = int(args.count)
     if count == 0:
         count = 0xFFFFFFFF
+    gen_thread = None
     for i in range(count):
         r = random.randint(0, miner_count * addr_count-1)
         addr = addrpool[r][0]
         pool = pools[int(r/addr_count)]
-        threading.Thread(target=generatetoaddress, args=(1,addr,0x7FFFFFFF,pool,)).start()
-        #generatetoaddress(1, addr, 0x7FFFFFFF, pool)
+
         t = int(args.time)
         if int(args.time) == 0:
             t = gettime(i)
+
+        if gen_thread != None :
+            gen_thread.join()
+        gen_thread = threading.Thread(target=generatetoaddress, args=(
+            1, addr, 0x7FFFFFFF, pool,))
+        gen_thread.start()
+        #generatetoaddress(1, addr, 0x7FFFFFFF, pool)
+
         time.sleep(t)
 
 
 if __name__ == '__main__':
     main()
-#9135
+# 9135
