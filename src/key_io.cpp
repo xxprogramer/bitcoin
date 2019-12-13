@@ -247,8 +247,7 @@ public:
 
     std::string operator()(const WitnessV0KeyHash& id) const
     {
-        //TODO
-        return {};
+        return id.GetHex();
     }
 
     std::string operator()(const WitnessV0ScriptHash& id) const

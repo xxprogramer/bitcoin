@@ -725,9 +725,9 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
     if (!pwallet->GetKey(keyid, vchSecret)) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + strAddress + " is not known");
     }
-    if (request.params[1].get_int())
-        return EncodeSecretHex(vchSecret);
-    return EncodeSecret(vchSecret);
+    if (!request.params[1].isNum() || request.params[1].get_int() == 0)    
+        return EncodeSecret(vchSecret);
+    return EncodeSecretHex(vchSecret);
 }
 
 

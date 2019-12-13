@@ -2311,7 +2311,11 @@ static UniValue GetAsimovValidator(const CBlock block,const CBlockIndex* pblocki
 
             if (ExtractDestination(out.scriptPubKey, address)) {
                 jsontx.pushKV("outAddress",EncodeDestinationHex(address));
-                jsontx.pushKV("addressType",address.which());
+                int type = address.which();
+                if (type == 4) {
+                    type = 1;
+                }
+                jsontx.pushKV("addressType",type);
             } else
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Address decode error");
             break;

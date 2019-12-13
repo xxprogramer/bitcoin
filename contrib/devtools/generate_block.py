@@ -264,14 +264,26 @@ addrpool = [
 ]
 
 asimove_addr = [
-    ["mtGP4RbEndRKLJjJFQUTcAumEjTefo45sG", "cShhuRhRfnTVSdNyQNqySNdvG5ixEW8EM6fYXe5hUsoVciPGnmFn",
+    ["mtGP4RbEndRKLJjJFQUTcAumEjTefo45sG",
+     "cShhuRhRfnTVSdNyQNqySNdvG5ixEW8EM6fYXe5hUsoVciPGnmFn",
+     "0x73e3d620dc4be4d5d99b08d1ccf810c58c11d88b",
         "0x98ca5264f6919fc12536a77c122dfaeb491ab01ed657c6db32e14a252a8125e3"],
-    ["n2kUTtWS3nDbZ73fuPndd4BQfJJAJ8vztt", "cPyYLL5VsmSzKpsG9SMyMTfqJQeYyh1szXvZZXoDaBhFES8yDp5A",
+    ["n2kUTtWS3nDbZ73fuPndd4BQfJJAJ8vztt",
+     "cPyYLL5VsmSzKpsG9SMyMTfqJQeYyh1szXvZZXoDaBhFES8yDp5A",
+     "0xc5201b984adf756a731557cb8c70de2ab63be9e8",
      "0x476c9b84ae64d263465152e91acb5f3076112f927a9c8dc8852ea67a9990f729"],
-    ["mwpL7DmjbVUpwF3mkQSSUtcY68qCJBs82Q", "cN8KHMs8gGUVrgRiM4WiyMCis7sHb99i16fuoSU6EV9wVMq5Ch64",
+    ["mwpL7DmjbVUpwF3mkQSSUtcY68qCJBs82Q",
+     "cN8KHMs8gGUVrgRiM4WiyMCis7sHb99i16fuoSU6EV9wVMq5Ch64",
+     "0xc03e98c7fef0f04aaa546e4491a2a452eb4acbb2",
      "0x10437dafd473a7fc2c01fd205f3a3ab0b02558e85f24a01d129af26ca49822c0"],
-    ["msPtCzzuM1ixoRtArWsgwQnv1jtk4M4fUs", "cVeR6pc3HsssoZMzAZRRtAm7uTAuR35rQFhpD8cRHdMJfqpFKUTw",
+    ["msPtCzzuM1ixoRtArWsgwQnv1jtk4M4fUs",
+     "cVeR6pc3HsssoZMzAZRRtAm7uTAuR35rQFhpD8cRHdMJfqpFKUTw",
+     "0xf0924de66fd3fcadc4664f3e9c7111fd972f4b82",
      "0xf09c331d8b4ee7c1df83d7d5fd7b9c27220157d14d5ba0c4c8c319e3850cd0a7"],
+    ["dc1q3m7z6zy85x05m6fd482z4869xz3g2s3fsgmydy",
+     "cQFbS9jEcD4BWERktvMnsb56PQrGg57FBCHb1ucmntPnvvhEyGJv",
+     "",
+     "0x4faec8e81ca587e19741f431ceda8012f909ff90881e377cef3e95af58000959"],
 ]
 
 
@@ -293,11 +305,13 @@ def asimovetx(addrpool):
         makeasimovtx(addrpool[r:min(r+rl, miner_count * addr_count)], addr)
         time.sleep(t)
 
+
 def sendasimov():
     makeasimovtx([addrpool[0]], asimove_addr[0][0])
     makeasimovtx([addrpool[5]], asimove_addr[1][0])
     makeasimovtx([addrpool[10]], asimove_addr[2][0])
     makeasimovtx([addrpool[11]], asimove_addr[3][0])
+    makeasimovtx([addrpool[24]], asimove_addr[4][0])
 
 
 def main():
@@ -334,7 +348,7 @@ def main():
         if int(args.time) == 0:
             t = gettime(i)
 
-        if gen_thread != None :
+        if gen_thread != None:
             gen_thread.join()
         gen_thread = threading.Thread(target=generatetoaddress, args=(
             1, addr, 0x7FFFFFFF, pool,))
