@@ -2258,7 +2258,6 @@ static std::string GetBlockMinerAddress(const CBlock block,const CBlockIndex* pb
     CTxDestination address;
     if(ExtractDestination(coinbasetx->vout[0].scriptPubKey,address))
         return EncodeDestination(address);
-    throw JSONRPCError(RPC_INTERNAL_ERROR, "Address decode error");
 }
 
 static std::string GetBlockMinerName(const CBlock block,const CBlockIndex* pblockindex){
