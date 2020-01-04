@@ -2258,6 +2258,7 @@ static std::string GetBlockMinerAddress(const CBlock block,const CBlockIndex* pb
     CTxDestination address;
     if(ExtractDestination(coinbasetx->vout[0].scriptPubKey,address))
         return EncodeDestination(address);
+    return "";
 }
 
 static std::string GetBlockMinerName(const CBlock block,const CBlockIndex* pblockindex){
