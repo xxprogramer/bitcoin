@@ -2391,8 +2391,6 @@ static UniValue listblockminerinfo(const JSONRPCRequest& request)
         std::string name = GetBlockMinerName(block,pblockindex);
         std::string addr = GetBlockMinerAddress(block,pblockindex);
         UniValue validator_txs = GetAsimovValidator(block,pblockindex);
-        if (addr.empty())
-            throw JSONRPCError(RPC_INTERNAL_ERROR,"This error is unexpected");
         UniValue item(UniValue::VOBJ);
         if (height < 0 || height > ::ChainActive().Height())
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
