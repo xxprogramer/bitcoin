@@ -29,7 +29,7 @@ parser.add_argument('-send', default=0,
 args = parser.parse_args()
 userAndPass = b64encode("{}:{}".format(
     args.rpcuser, args.rpcpassword).encode('utf-8')).decode("ascii")
-
+print(userAndPass)
 
 def getnewaddress():
     conn = http.client.HTTPConnection(args.host)
